@@ -2,32 +2,4 @@
 
 > A GitHub App built with [Probot](https://github.com/probot/probot) that A Probot app
 
-## Setup
-
-```sh
-# Install dependencies
-npm install
-
-# Run the bot
-npm start
-```
-
-## Docker
-
-```sh
-# 1. Build container
-docker build -t gh-roaster .
-
-# 2. Start container
-docker run -e APP_ID=<app-id> -e PRIVATE_KEY=<pem-value> gh-roaster
-```
-
-## Contributing
-
-If you have suggestions for how gh-roaster could be improved, or want to report a bug, open an issue! We'd love all and any contributions.
-
-For more, check out the [Contributing Guide](CONTRIBUTING.md).
-
-## License
-
-[ISC](LICENSE) © 2024 ah7255703
+[![Netlify Status](https://api.netlify.com/api/v1/badges/1495faf0-e827-4eb9-9463-f363a77f2bbc/deploy-status)](https://app.netlify.com/sites/gh-roaster/deploys)
