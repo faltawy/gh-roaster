@@ -21,6 +21,7 @@
     "allowUnusedLabels": true,
     "noUnusedLocals": false, // suppress unused local variables
     "noUnusedParameters": false,
+    "allowSyntheticDefaultImports": true,
   },
   "include": ["src/", "functions/"],
   "exclude": [
