@@ -19,9 +19,9 @@
     "forceConsistentCasingInFileNames": true,
     "allowUnusedLabels": true,
     "noUnusedLocals": false, // suppress unused local variables
-    "noUnusedParameters": false // s
+    "noUnusedParameters": false,
   },
-  "include": ["src/"],
+  "include": ["src/", "functions/"],
   "exclude": [
     "node_modules",
     "lib",

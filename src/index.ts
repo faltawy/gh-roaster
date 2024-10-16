@@ -4,6 +4,7 @@ import { Probot } from "probot";
 import { z } from "zod";
 import { zodResponseFormat } from "openai/helpers/zod";
 import type { WorkflowRun } from "@octokit/webhooks-types";
+
 const openai = new OpenAI();
 
 const ROASTER_SYSTEM_PROMPT = <ChatCompletionSystemMessageParam>{
@@ -24,12 +25,7 @@ const ROASTER_SYSTEM_PROMPT = <ChatCompletionSystemMessageParam>{
 const MAXIMUM_ROAST_LENGTH = 100;
 const MAXIMUM_ROASTS = 1;
 
-interface DiffType {
-  patch?: string;
-  filename?: string;
-}
-
-async function generateSavageRoast(wr: WorkflowRun, diff?: DiffType[]) {
+async function generateSavageRoast(wr: WorkflowRun) {
   const completion = await openai.beta.chat.completions.parse({
     model: "gpt-4o-mini",
     stream: false,
@@ -39,7 +35,7 @@ async function generateSavageRoast(wr: WorkflowRun, diff?: DiffType[]) {
           content: z.string()
             .describe(`markdown content`),
         })),
-      }),"roasts"),
+      }), "roasts"),
     messages: [
       ROASTER_SYSTEM_PROMPT,
       {
@@ -56,9 +52,8 @@ async function generateSavageRoast(wr: WorkflowRun, diff?: DiffType[]) {
         - **Triggered by**: ${wr.actor}
         - **Failure Type**: ${wr.conclusion === 'failure' ? 'CI failure' : 'Other failure'}
         - **Branch**: ${wr.head_branch}
-        - **File Diffs**: ${(diff ?? []).map(file => `\n  - **${file.filename}**:\n    ${file.patch}`).join('')}
         ${wr.pull_requests.length === 0 ? "- This workflow was manually triggered and has no associated PR." : ""}
-        
+        - also mention the user's name: ${wr.actor.login}
         Your task is to roast the user brutally, incorporating the Workflow URL in your message. 
         Guidelines: each roast should be no more than ${MAXIMUM_ROAST_LENGTH} characters, and generate up to ${MAXIMUM_ROASTS} roasts.
         `
@@ -71,36 +66,27 @@ async function generateSavageRoast(wr: WorkflowRun, diff?: DiffType[]) {
 export default (app: Probot) => {
   app.on("workflow_run.completed", async (ctx) => {
     const workflowRun = ctx.payload.workflow_run;
-    const commit = await ctx.octokit.repos.getCommit({
-      owner: workflowRun.repository.owner.login,
-      repo: workflowRun.repository.name,
-      ref: workflowRun.head_commit.id,
-    });
+    const repo = ctx.repo();
 
-    const diff = commit.data.files?.map((file)=>({
-      filename: file.filename,
-      patch: file.patch
-    }))
-    
     if (workflowRun.conclusion === "failure") {
-      const completion = await generateSavageRoast(workflowRun, diff);
-      const roastMessages  = completion.choices.at(0)?.message.parsed?.messages;
-      if (roastMessages){
+      const completion = await generateSavageRoast(workflowRun);
+      const roastMessages = completion.choices.at(0)?.message.parsed?.messages;
+
+      if (roastMessages) {
         if (workflowRun.pull_requests.length > 0) {
           for (const roast of roastMessages) {
             await ctx.octokit.issues.createComment({
               owner: workflowRun.repository.owner.login,
-              repo: workflowRun.repository.name,
+              repo: repo.repo,
               issue_number: workflowRun.pull_requests[0].number,
               body: roast.content,
             });
           }
-        }
-        else {
+        } else {
           for (const roast of roastMessages) {
             await ctx.octokit.repos.createCommitComment({
-              owner: workflowRun.repository.owner.login,
-              repo: workflowRun.repository.name,
+              owner: repo.owner,
+              repo: repo.repo,
               commit_sha: workflowRun.head_commit.id,
               body: roast.content,
             });

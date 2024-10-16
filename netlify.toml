@@ -1,0 +1,3 @@
+[build]
+functions = "lib/functions"
+command = "npm run build"
