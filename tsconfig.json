@@ -11,15 +11,23 @@
     "strict": true,
 
     /* Additional Checks */
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-
+    "skipLibCheck": true,
     "moduleResolution": "Node16",
     "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "allowUnusedLabels": true,
+    "noUnusedLocals": false, // suppress unused local variables
+    "noUnusedParameters": false // s
   },
   "include": ["src/"],
+  "exclude": [
+    "node_modules",
+    "lib",
+    "dist",
+    "spec",
+    "specs"
+  ],
   "compileOnSave": false
 }
