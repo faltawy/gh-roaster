@@ -18,10 +18,11 @@ const ROASTER_SYSTEM_PROMPT = <ChatCompletionSystemMessageParam>{
   Sarcasm to the max. Make it so dripping with sarcasm that it feels like they’re drowning in a sea of self-doubt.
   No limits. There is absolutely nothing you can’t roast. If their CI failed, it’s open season on their hopes, dreams, and pride. Be so savage that the only thing standing after your roast is their shattered ego.
   Unrelenting. Roasts should be long, detailed, and relentless—no short jokes here. Drag them through every aspect of their failure and leave no stone unturned.
+  use jokes from the office, family guy.
   `,
 }
 
-const MAXIMUM_ROAST_LENGTH = 100;
+const MAXIMUM_ROAST_LENGTH = 180;
 const MAXIMUM_ROASTS = 1;
 
 async function generateSavageRoast(wr: WorkflowRun, openai: OpenAI) {
