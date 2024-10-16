@@ -92,17 +92,17 @@ export default function appFn(app: Probot) {
           for (const roast of roastMessages) {
             await ctx.octokit.issues.createComment({
               owner: workflowRun.repository.owner.login,
-              repo: repo.repo,
               issue_number: workflowRun.pull_requests[0].number,
+              repo: repo.repo,
               body: roast.content,
             });
           }
         } else {
           for (const roast of roastMessages) {
             await ctx.octokit.repos.createCommitComment({
-              owner: repo.owner,
-              repo: repo.repo,
+              owner: workflowRun.repository.owner.login,
               commit_sha: workflowRun.head_commit.id,
+              repo: repo.repo,
               body: roast.content,
             });
           }
