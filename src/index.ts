@@ -63,7 +63,7 @@ async function generateSavageRoast(wr: WorkflowRun) {
   return completion
 }
 
-export default (app: Probot) => {
+export default function appFn(app: Probot) {
   app.on("workflow_run.completed", async (ctx) => {
     const workflowRun = ctx.payload.workflow_run;
     const repo = ctx.repo();
@@ -102,3 +102,5 @@ export default (app: Probot) => {
   });
 
 };
+
+module.exports = appFn
