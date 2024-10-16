@@ -5,7 +5,6 @@ import { z } from "zod";
 import { zodResponseFormat } from "openai/helpers/zod";
 import type { WorkflowRun } from "@octokit/webhooks-types";
 
-const openai = new OpenAI();
 
 const ROASTER_SYSTEM_PROMPT = <ChatCompletionSystemMessageParam>{
   role: "system",
@@ -25,7 +24,7 @@ const ROASTER_SYSTEM_PROMPT = <ChatCompletionSystemMessageParam>{
 const MAXIMUM_ROAST_LENGTH = 100;
 const MAXIMUM_ROASTS = 1;
 
-async function generateSavageRoast(wr: WorkflowRun) {
+async function generateSavageRoast(wr: WorkflowRun, openai: OpenAI) {
   const completion = await openai.beta.chat.completions.parse({
     model: "gpt-4o-mini",
     stream: false,
@@ -68,8 +67,24 @@ export default function appFn(app: Probot) {
     const workflowRun = ctx.payload.workflow_run;
     const repo = ctx.repo();
 
+    const { data } = await ctx.octokit.actions.listRepoVariables({
+      owner: repo.owner,
+      repo: repo.repo,
+    });
+
+    const apiKey = data.variables.find((v) => v.name === "OPENAI_API_KEY");
+    
+    if (!apiKey?.value) {
+      // create issue
+      return;
+    }
+
+    const openai = new OpenAI({
+      apiKey: apiKey.value,
+    })
+
     if (workflowRun.conclusion === "failure") {
-      const completion = await generateSavageRoast(workflowRun);
+      const completion = await generateSavageRoast(workflowRun, openai);
       const roastMessages = completion.choices.at(0)?.message.parsed?.messages;
 
       if (roastMessages) {
