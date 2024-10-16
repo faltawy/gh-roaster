@@ -3,17 +3,18 @@
     "incremental": true,
     "target": "es2022",
     "module": "Node16",
-    "declaration": true,
-    "sourceMap": true,
+    "declaration": false,
+    "sourceMap": false,
     "outDir": "./lib",
 
     /* Strict Type-Checking Options */
     "strict": true,
-
+    "declarationMap": false,
     /* Additional Checks */
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
+    "allowJs": true,
     "moduleResolution": "Node16",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,

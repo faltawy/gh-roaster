@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "start": "probot run ./lib/index.js",
+    "start": "probot run ./lib/src/index.js",
     "test": "vitest",
     "build:start": "npm run build && npm run start",
     "dev": "chokidar './src/**' -c tsc 'npm run build:start' --initial"
