@@ -5,7 +5,7 @@ import { z } from "zod";
 import { zodResponseFormat, zodFunction } from "openai/helpers/zod";
 import type { WorkflowRun } from "@octokit/webhooks-types";
 import memesJson from "./memes.json" assert { type: "json" };
-import type { RestEndpointMethodTypes} from "@octokit/plugin-rest-endpoint-methods"
+import type { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods"
 
 type CommitComments = RestEndpointMethodTypes['repos']['listCommentsForCommit']['response']['data'];
 
@@ -58,7 +58,10 @@ const tools: Array<ChatCompletionTool> = [
   getMemeFunction
 ];
 
-async function generateSavageRoast(wr: WorkflowRun, openai: OpenAI) {
+async function generateSavageRoast(wr: WorkflowRun, openai: OpenAI,
+  _extra: {
+    summedComments?: string
+  }) {
   const completion = await openai.beta.chat.completions.parse({
     model: "gpt-4o-mini",
     stream: false,
@@ -92,7 +95,14 @@ async function generateSavageRoast(wr: WorkflowRun, openai: OpenAI) {
         Guidelines: each roast should be no more than ${MAXIMUM_ROAST_LENGTH} characters, and generate up to ${MAXIMUM_ROASTS} roasts.
         write them in markdown, follow github's markdown syntax.
         `
-      }
+      },
+      {
+        role: "system",
+        content: `
+        Here's some extra context the commit / pr comments try to mention the other users to roast them as well as needed 
+        ${_extra?.summedComments}
+        `
+      },
     ]
   });
   return completion
@@ -149,37 +159,36 @@ export default function appFn(app: Probot) {
     })
 
     if (workflowRun.conclusion === "failure") {
-      const completion = await generateSavageRoast(workflowRun, openai);
+      const completion = await generateSavageRoast(workflowRun, openai, {});
       const roastMessages = completion.choices.at(0)?.message.parsed?.messages;
+      if (!roastMessages || roastMessages.length === 0) return;
 
-      if (roastMessages) {
-        if (workflowRun.pull_requests.length > 0) {
-          for (const roast of roastMessages) {
-            await ctx.octokit.rest.issues.createComment({
-              owner: workflowRun.repository.owner.login,
-              issue_number: workflowRun.pull_requests[0].number,
-              repo: repo.repo,
-              body: roast.content,
-            });
-          }
-        } else {
-          // single commit
-          for (const roast of roastMessages) {
-            const comments = await ctx.octokit.rest.repos.listCommentsForCommit({
-              commit_sha: workflowRun.head_commit.id,
-              owner: repo.owner,
-              repo: repo.repo,
-            });
-            
-            const summedComments = sumCommitComments(comments.data);
-            ctx.log.debug(summedComments)
-            await ctx.octokit.rest.repos.createCommitComment({
-              owner: workflowRun.repository.owner.login,
-              commit_sha: workflowRun.head_commit.id,
-              repo: repo.repo,
-              body: roast.content,
-            });
-          }
+      if (workflowRun.pull_requests.length > 0) {
+        for (const roast of roastMessages) {
+          await ctx.octokit.rest.issues.createComment({
+            owner: workflowRun.repository.owner.login,
+            issue_number: workflowRun.pull_requests[0].number,
+            repo: repo.repo,
+            body: roast.content,
+          });
+        }
+      } else {
+        // single commit
+        for (const roast of roastMessages) {
+          const comments = await ctx.octokit.rest.repos.listCommentsForCommit({
+            commit_sha: workflowRun.head_commit.id,
+            owner: repo.owner,
+            repo: repo.repo,
+          });
+
+          const summedComments = sumCommitComments(comments.data);
+          ctx.log.debug(summedComments)
+          await ctx.octokit.rest.repos.createCommitComment({
+            owner: workflowRun.repository.owner.login,
+            commit_sha: workflowRun.head_commit.id,
+            repo: repo.repo,
+            body: roast.content,
+          });
         }
       }
     }
