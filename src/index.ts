@@ -185,16 +185,12 @@ export default function appFn(app: Probot) {
           });
         }
       } else {
-        // single commit
+        // const comments = await ctx.octokit.rest.repos.listCommentsForCommit({
+        //   commit_sha: workflowRun.head_commit.id,
+        //   owner: repo.owner,
+        //   repo: repo.repo,
+        // });
         for (const roast of roastMessages) {
-          const comments = await ctx.octokit.rest.repos.listCommentsForCommit({
-            commit_sha: workflowRun.head_commit.id,
-            owner: repo.owner,
-            repo: repo.repo,
-          });
-
-          const summedComments = sumCommitComments(comments.data);
-          ctx.log.debug(summedComments)
           await ctx.octokit.rest.repos.createCommitComment({
             owner: workflowRun.repository.owner.login,
             commit_sha: workflowRun.head_commit.id,
