@@ -93,14 +93,19 @@ async function generateSavageRoast(wr: WorkflowRun, openai: OpenAI,
         - **Commit Message**: "${wr.head_commit.message}"
         - **Committer**: ${wr.head_commit.author.name}
         - **Commit Date**: ${wr.head_commit.timestamp}
-        - **Triggered by**: ${wr.actor}
+        - **Triggered by**: ${JSON.stringify(wr.actor, null, 2)}
         - **Failure Type**: ${wr.conclusion === 'failure' ? 'CI failure' : 'Other failure'}
         - **Branch**: ${wr.head_branch}
+        - **Pull Requests**: ${wr.pull_requests.length === 0 ? "This workflow was manually triggered and has no associated PR." : ""}
+        - **Run Attempt**: ${wr.run_attempt}
+        - **Pull Request Title**: ${wr.pull_requests.length === 0 ? "- This workflow was manually triggered and has no associated PR." : ""}
+        - **Pull Request URL**: ${wr.pull_requests.length === 0 ? "- This workflow was manually triggered and has no associated PR." : ""}
+        - **Pull Request Number**: ${wr.pull_requests.length === 0 ? "- This workflow was manually triggered and has no associated PR." : ""}
         ${wr.pull_requests.length === 0 ? "- This workflow was manually triggered and has no associated PR." : ""}
-        - also mention the user's name: ${wr.actor.login}
         Your task is to roast the user brutally, incorporating the Workflow URL in your message. 
         Guidelines: each roast should be no more than ${MAXIMUM_ROAST_LENGTH} characters, and generate up to ${MAXIMUM_ROASTS} roasts.
         write them in markdown, follow github's markdown syntax.
+        - username: ${wr.actor.login} try to mention him.
         `
       },
     ]
