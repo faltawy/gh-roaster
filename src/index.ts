@@ -122,7 +122,6 @@ const APP_ISSUE_LABELS = [
 ];
 
 const OPENAI_API_KEY = "OPENAI_API_KEY"
-
 export default function appFn(app: Probot) {
   // when the app is installed, create an issue with the installation instructions
   app.on(["installation_repositories.added", "installation_repositories.removed"], async (ctx) => {
@@ -135,17 +134,21 @@ export default function appFn(app: Probot) {
     } else if (pld.action === "added") {
       pld.repositories_added.forEach(async (repo) => {
         app.log.info(`[${pld.installation.account.login}]: Installation detected. Creating an issue with installation instructions.`);
-        const resp = await ctx.octokit.issues.create({
-          owner: owner,
-          repo: repo.name,
-          assignee: owner,
-          title: "Roaster Bot Installation Instructions",
-          body: `
-          To make sure that the app is properly working, you should create a new repository variable with the name \`OPENAI_API_KEY\` and the value should be your OpenAI API key.
-          `,
-          labels: APP_ISSUE_LABELS,
-        });
-        app.log.info(`[ISSUE]: ${resp.data}`)
+        // add some delay before hitting this endpoint
+        setTimeout(async () => {
+          const resp = await ctx.octokit.issues.create({
+            owner: owner,
+            repo: repo.name,
+            title: "Roaster Bot Installation Instructions",
+            body: `
+            To make sure that the app is properly working, you should create a new repository variable with the name \`OPENAI_API_KEY\` and the value should be your OpenAI API key.
+            `,
+            labels: APP_ISSUE_LABELS,
+          });
+
+          app.log.info(`[ISSUE]: ${resp}`);
+        }, 2000);
+
       })
     }
   })
