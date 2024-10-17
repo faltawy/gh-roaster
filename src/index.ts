@@ -171,14 +171,14 @@ export default function appFn(app: Probot) {
     if (workflowRun.conclusion === "failure") {
       app.log.info(`[${repo.repo}]: Workflow run failed. Generating a roast for the user.`);
       const completion = await generateSavageRoast(workflowRun, openai, {});
+      app.log.info(JSON.stringify(completion, null, 2))
       const roastMessages = completion.choices.at(0)?.message.parsed?.messages;
-      app.log.info(`[${repo.repo}]: Roast generated: `, roastMessages?.map(f=>f.content).join("\n"));
       if (!roastMessages) return;
-
+      app.log.info(`[${repo.repo}]: Roast generated: `, roastMessages?.map(f=>f.content).join("\n"));
       if (workflowRun.pull_requests.length > 0) {
         for (const roast of roastMessages) {
           await ctx.octokit.issues.createComment({
-            owner: workflowRun.repository.owner.login,
+            owner: repo.owner,
             issue_number: workflowRun.pull_requests[0].number,
             repo: repo.repo,
             body: roast.content,
@@ -192,7 +192,7 @@ export default function appFn(app: Probot) {
         });
         for (const roast of roastMessages) {
           await ctx.octokit.repos.createCommitComment({
-            owner: workflowRun.repository.owner.login,
+            owner: repo.owner,
             commit_sha: workflowRun.head_commit.id,
             repo: repo.repo,
             body: roast.content,
