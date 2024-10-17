@@ -64,6 +64,10 @@
                 aiNote.classList.add('hidden');
             }, 300); // Match the duration of the transition
         }
+        function dismissAINoteAndTakeMeToGitHub() {
+            dismissAINote();
+            window.open('https://github.com/apps/gh-roaster', "_blank");
+        }
     </script>
 </head>
 
@@ -75,10 +79,19 @@
                 <p class="text-sm font-medium">
                     Just a heads-up, this landing page was AI-generated. Cool, huh?
                 </p>
-                <button onclick="dismissAINote()"
-                    class="w-fit ms-auto whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground h-10 px-4 py-2 shrink-0">
-                    I understand
-                </button>
+                <div class="flex items-center gap-2 justify-start">
+                    <button 
+                    tabindex="0"        
+                    onclick="dismissAINote()"
+                        class="w-fit whitespace-nowrap shrink rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground px-4 py-2">
+                        Ok
+                    </button>
+                    <button 
+                        onclick="dismissAINoteAndTakeMeToGitHub()"
+                        class="w-fit whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground px-4 py-2">
+                        Nah
+                    </button>
+                </div>
             </div>
             <section id="hero" class="text-center mb-20">
                 <h1 class="text-5xl md:text-6xl font-bold mb-4">GitHub Roaster</h1>
