@@ -76,6 +76,13 @@ async function generateSavageRoast(wr: WorkflowRun, openai: OpenAI,
     messages: [
       ROASTER_SYSTEM_PROMPT,
       {
+        role: "system",
+        content: `
+        Here's some extra context the commit / pr comments try to mention the other users to roast them as well as needed 
+        ${_extra?.summedComments}
+        `
+      },
+      {
         role: "user",
         content: `
         Generate a roast for a failed workflow run. Use the following context:
@@ -94,13 +101,6 @@ async function generateSavageRoast(wr: WorkflowRun, openai: OpenAI,
         Your task is to roast the user brutally, incorporating the Workflow URL in your message. 
         Guidelines: each roast should be no more than ${MAXIMUM_ROAST_LENGTH} characters, and generate up to ${MAXIMUM_ROASTS} roasts.
         write them in markdown, follow github's markdown syntax.
-        `
-      },
-      {
-        role: "system",
-        content: `
-        Here's some extra context the commit / pr comments try to mention the other users to roast them as well as needed 
-        ${_extra?.summedComments}
         `
       },
     ]
