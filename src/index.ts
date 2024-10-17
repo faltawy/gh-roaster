@@ -127,8 +127,12 @@ export default function appFn(app: Probot) {
 
   // when the app is installed, create an issue with the installation instructions
   app.on("installation", async (ctx) => {
-    if (ctx.payload.action === "created" || ctx.payload.action === "new_permissions_accepted") {
-      app.log.info(`[${ctx.payload.installation.account.login}]: Installation detected. Creating an issue with installation instructions.`);
+    const pld = ctx.payload;
+    if (pld.action === "deleted"){
+      app.log.info(`[${pld.installation.account.login}]: Uninstalled the application. `)
+    }
+    if (pld.action === "created" || pld.action === "new_permissions_accepted") {
+      app.log.info(`[${pld.installation.account.login}]: Installation detected. Creating an issue with installation instructions.`);
       const repo = ctx.repo();
       await ctx.octokit.issues.create({
         owner: repo.owner,
