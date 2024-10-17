@@ -169,8 +169,10 @@ export default function appFn(app: Probot) {
     })
 
     if (workflowRun.conclusion === "failure") {
+      app.log.info(`[${repo.repo}]: Workflow run failed. Generating a roast for the user.`);
       const completion = await generateSavageRoast(workflowRun, openai, {});
       const roastMessages = completion.choices.at(0)?.message.parsed?.messages;
+      app.log.info(`[${repo.repo}]: Roast generated: `, roastMessages);
       if (!roastMessages || roastMessages.length === 0) return;
 
       if (workflowRun.pull_requests.length > 0) {
