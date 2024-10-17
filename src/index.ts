@@ -124,7 +124,7 @@ const APP_ISSUE_LABELS = [
 const OPENAI_API_KEY = "OPENAI_API_KEY"
 
 export default function appFn(app: Probot) {
-
+  app.log.info(`[App]: started`)
   // when the app is installed, create an issue with the installation instructions
   app.on("installation", async (ctx) => {
     const pld = ctx.payload;
