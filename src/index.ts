@@ -151,7 +151,7 @@ export default function appFn(app: Probot) {
     const workflowRun = ctx.payload.workflow_run;
     const repo = ctx.repo();
 
-    const { data } = await ctx.octokit.rest.actions.getRepoVariable({
+    const { data } = await ctx.octokit.actions.getRepoVariable({
       owner: repo.owner,
       repo: repo.repo,
       name: OPENAI_API_KEY
@@ -177,7 +177,7 @@ export default function appFn(app: Probot) {
 
       if (workflowRun.pull_requests.length > 0) {
         for (const roast of roastMessages) {
-          await ctx.octokit.rest.issues.createComment({
+          await ctx.octokit.issues.createComment({
             owner: workflowRun.repository.owner.login,
             issue_number: workflowRun.pull_requests[0].number,
             repo: repo.repo,
@@ -185,13 +185,13 @@ export default function appFn(app: Probot) {
           });
         }
       } else {
-        // const comments = await ctx.octokit.rest.repos.listCommentsForCommit({
-        //   commit_sha: workflowRun.head_commit.id,
-        //   owner: repo.owner,
-        //   repo: repo.repo,
-        // });
+        const comments = await ctx.octokit.repos.listCommentsForCommit({
+          commit_sha: workflowRun.head_commit.id,
+          owner: repo.owner,
+          repo: repo.repo,
+        });
         for (const roast of roastMessages) {
-          await ctx.octokit.rest.repos.createCommitComment({
+          await ctx.octokit.repos.createCommitComment({
             owner: workflowRun.repository.owner.login,
             commit_sha: workflowRun.head_commit.id,
             repo: repo.repo,
