@@ -1,0 +1,14 @@
+[
+    {
+        "type": "image",
+        "url": "https://i.imgur.com/1HIn6Dr.jpg",
+        "title": "Epic Fail",
+        "description": "A hilarious depiction of someone collapsing in frustration, representing the feeling of a repeated CI build failure."
+    },
+    {
+        "type": "gif",
+        "url": "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExcXUzMHkwZXMxNHE4MnJwMmJ5cXM0Y2huc3U1NjJuNDczZXZ0anQwZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/lb5nMu0UIh4YM/giphy.gif",
+        "title": "Facepalm",
+        "description": "A character facepalming in disbelief, perfectly capturing the frustration when a colleague pushes broken code to production."
+    }
+]

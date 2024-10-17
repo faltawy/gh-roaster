@@ -1,10 +1,21 @@
 import OpenAI from "openai";
-import { ChatCompletionSystemMessageParam } from "openai/resources/index.mjs";
+import { ChatCompletionSystemMessageParam, ChatCompletionTool } from "openai/resources/index";
 import { Probot } from "probot";
 import { z } from "zod";
-import { zodResponseFormat } from "openai/helpers/zod";
+import { zodResponseFormat, zodFunction } from "openai/helpers/zod";
 import type { WorkflowRun } from "@octokit/webhooks-types";
+import memesJson from "./memes.json" assert { type: "json" };
+import type { RestEndpointMethodTypes} from "@octokit/plugin-rest-endpoint-methods"
 
+type CommitComments = RestEndpointMethodTypes['repos']['listCommentsForCommit']['response']['data'];
+
+function sumCommitComments(comments: CommitComments) {
+  const summed = [];
+  for (const comment of comments) {
+    summed.push(`[${comment?.user?.type}][${comment?.user?.login}](${comment?.author_association}):says ${comment.body}`);
+  }
+  return summed.join("\n");
+}
 
 const ROASTER_SYSTEM_PROMPT = <ChatCompletionSystemMessageParam>{
   role: "system",
@@ -28,9 +39,24 @@ const ROASTER_SYSTEM_PROMPT = <ChatCompletionSystemMessageParam>{
   `,
 }
 
-
 const MAXIMUM_ROAST_LENGTH = 200;
 const MAXIMUM_ROASTS = 1;
+
+const getMemeFunction = zodFunction({
+  name: "getMeme",
+  description: "select a suitable meme or gif to make the roast stronger",
+  parameters: z.object({
+    type: z.enum(["image", "gif"]),
+  }),
+  function(args) {
+    const memes = memesJson.find((m) => m.type === args.type);
+    return memes;
+  },
+})
+
+const tools: Array<ChatCompletionTool> = [
+  getMemeFunction
+];
 
 async function generateSavageRoast(wr: WorkflowRun, openai: OpenAI) {
   const completion = await openai.beta.chat.completions.parse({
@@ -43,6 +69,7 @@ async function generateSavageRoast(wr: WorkflowRun, openai: OpenAI) {
             .describe(`markdown content`),
         })),
       }), "roasts"),
+    tools,
     messages: [
       ROASTER_SYSTEM_PROMPT,
       {
@@ -71,25 +98,54 @@ async function generateSavageRoast(wr: WorkflowRun, openai: OpenAI) {
   return completion
 }
 
+const APP_ISSUE_LABELS = [
+  {
+    name: "gh-roaster",
+    description: "Roaster Bot",
+    color: "ff0000"
+  },
+  {
+    name: "installation",
+    description: "Installation Instructions",
+    color: "ff0000",
+  }
+];
+
+const OPENAI_API_KEY = "OPENAI_API_KEY"
+
 export default function appFn(app: Probot) {
+  app.on("installation.created", async (ctx) => {
+    const repo = ctx.repo();
+    await ctx.octokit.issues.create({
+      owner: repo.owner,
+      repo: repo.repo,
+      title: "Roaster Bot Installation Instructions",
+      body: `
+      To make sure that the app is properly working, you should create a new repository variable with the name \`OPENAI_API_KEY\` and the value should be your OpenAI API key.
+      `,
+      labels: APP_ISSUE_LABELS,
+    });
+  })
+
   app.on("workflow_run.completed", async (ctx) => {
     const workflowRun = ctx.payload.workflow_run;
     const repo = ctx.repo();
 
-    const { data } = await ctx.octokit.actions.listRepoVariables({
+    const { data } = await ctx.octokit.rest.actions.getRepoVariable({
       owner: repo.owner,
       repo: repo.repo,
+      name: OPENAI_API_KEY
     });
 
-    const apiKey = data.variables.find((v) => v.name === "OPENAI_API_KEY");
-    
-    if (!apiKey?.value) {
-      // create issue
+    const apiKey = data.value
+
+    if (!apiKey) {
+      ctx.log.info(`[${repo.repo}]: No OpenAI API Key found. Please create a new repository variable with the name`)
       return;
     }
 
     const openai = new OpenAI({
-      apiKey: apiKey.value,
+      apiKey: apiKey,
     })
 
     if (workflowRun.conclusion === "failure") {
@@ -99,7 +155,7 @@ export default function appFn(app: Probot) {
       if (roastMessages) {
         if (workflowRun.pull_requests.length > 0) {
           for (const roast of roastMessages) {
-            await ctx.octokit.issues.createComment({
+            await ctx.octokit.rest.issues.createComment({
               owner: workflowRun.repository.owner.login,
               issue_number: workflowRun.pull_requests[0].number,
               repo: repo.repo,
@@ -107,8 +163,17 @@ export default function appFn(app: Probot) {
             });
           }
         } else {
+          // single commit
           for (const roast of roastMessages) {
-            await ctx.octokit.repos.createCommitComment({
+            const comments = await ctx.octokit.rest.repos.listCommentsForCommit({
+              commit_sha: workflowRun.head_commit.id,
+              owner: repo.owner,
+              repo: repo.repo,
+            });
+            
+            const summedComments = sumCommitComments(comments.data);
+            ctx.log.debug(summedComments)
+            await ctx.octokit.rest.repos.createCommitComment({
               owner: workflowRun.repository.owner.login,
               commit_sha: workflowRun.head_commit.id,
               repo: repo.repo,
@@ -119,12 +184,6 @@ export default function appFn(app: Probot) {
       }
     }
   });
-
-  app.on("check_run.completed", async (ctx) => {
-    const user = ctx.payload.sender;
-
-  });
-
 };
 
 module.exports = appFn

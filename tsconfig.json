@@ -2,11 +2,12 @@
   "compilerOptions": {
     "incremental": true,
     "target": "es2022",
-    "module": "Node16",
+    "module": "NodeNext",
     "declaration": false,
     "sourceMap": false,
     "outDir": "./lib",
-
+    "resolveJsonModule": true,
+    "moduleDetection": "auto",
     /* Strict Type-Checking Options */
     "strict": true,
     "declarationMap": false,
