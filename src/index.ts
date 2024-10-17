@@ -126,24 +126,29 @@ const OPENAI_API_KEY = "OPENAI_API_KEY"
 export default function appFn(app: Probot) {
   app.log.info(`[App]: started`)
   // when the app is installed, create an issue with the installation instructions
-  app.on(["installation_repositories.added", "installation_repositories.removed", "installation.new_permissions_accepted"], async (ctx) => {
+  app.on(["installation_repositories.added", "installation_repositories.removed"], (ctx) => {
     const pld = ctx.payload;
-    if (pld.action === "removed"){
-      app.log.info(`[${pld.installation.account.login}]: Uninstalled the application. `)
-    }
-    if (pld.action === "added" || pld.action === "new_permissions_accepted") {
-      app.log.info(`[${pld.installation.account.login}]: Installation detected. Creating an issue with installation instructions.`);
-      const repo = ctx.repo();
-      await ctx.octokit.issues.create({
-        owner: repo.owner,
-        repo: repo.repo,
-        title: "Roaster Bot Installation Instructions",
-        body: `
-        To make sure that the app is properly working, you should create a new repository variable with the name \`OPENAI_API_KEY\` and the value should be your OpenAI API key.
-        `,
-        labels: APP_ISSUE_LABELS,
-      });
-    }
+    const owner = ctx.payload.installation.account.login;
+    const repos = ctx.payload.repositories_added;
+    
+    repos.forEach(async (repo)=>{
+      if (pld.action === "removed"){
+        app.log.info(`[${pld.installation.account.login}]: Uninstalled the application. `)
+      }
+      else if (pld.action === "added") {
+        app.log.info(`[${pld.installation.account.login}]: Installation detected. Creating an issue with installation instructions.`);
+        await ctx.octokit.issues.create({
+          owner: owner,
+          repo: repo.name,
+          title: "Roaster Bot Installation Instructions",
+          body: `
+          To make sure that the app is properly working, you should create a new repository variable with the name \`OPENAI_API_KEY\` and the value should be your OpenAI API key.
+          `,
+          labels: APP_ISSUE_LABELS,
+        });
+      }
+    })
+
   })
 
   app.on("workflow_run.completed", async (ctx) => {
