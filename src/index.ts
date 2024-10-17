@@ -110,7 +110,7 @@ async function generateSavageRoast(wr: WorkflowRun, openai: OpenAI,
 
 const APP_ISSUE_LABELS = [
   {
-    name: "gh-roaster",
+    name: "Roaster",
     description: "Roaster Bot",
     color: "ff0000"
   },
@@ -145,7 +145,7 @@ export default function appFn(app: Probot) {
           `,
           labels: APP_ISSUE_LABELS,
         });
-        app.log.info(resp.data)
+        app.log.info(`[ISSUE]: ${resp.data}`)
       })
     }
   })
