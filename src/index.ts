@@ -124,17 +124,22 @@ const APP_ISSUE_LABELS = [
 const OPENAI_API_KEY = "OPENAI_API_KEY"
 
 export default function appFn(app: Probot) {
-  app.on("installation.created", async (ctx) => {
-    const repo = ctx.repo();
-    await ctx.octokit.issues.create({
-      owner: repo.owner,
-      repo: repo.repo,
-      title: "Roaster Bot Installation Instructions",
-      body: `
-      To make sure that the app is properly working, you should create a new repository variable with the name \`OPENAI_API_KEY\` and the value should be your OpenAI API key.
-      `,
-      labels: APP_ISSUE_LABELS,
-    });
+
+  // when the app is installed, create an issue with the installation instructions
+  app.on("installation", async (ctx) => {
+    if (ctx.payload.action === "created" || ctx.payload.action === "new_permissions_accepted") {
+      app.log.info(`[${ctx.payload.installation.account.login}]: Installation detected. Creating an issue with installation instructions.`);
+      const repo = ctx.repo();
+      await ctx.octokit.issues.create({
+        owner: repo.owner,
+        repo: repo.repo,
+        title: "Roaster Bot Installation Instructions",
+        body: `
+        To make sure that the app is properly working, you should create a new repository variable with the name \`OPENAI_API_KEY\` and the value should be your OpenAI API key.
+        `,
+        labels: APP_ISSUE_LABELS,
+      });
+    }
   })
 
   app.on("workflow_run.completed", async (ctx) => {
