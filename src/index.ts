@@ -124,31 +124,30 @@ const APP_ISSUE_LABELS = [
 const OPENAI_API_KEY = "OPENAI_API_KEY"
 
 export default function appFn(app: Probot) {
-  app.log.info(`[App]: started`)
   // when the app is installed, create an issue with the installation instructions
-  app.on(["installation_repositories.added", "installation_repositories.removed"], (ctx) => {
+  app.on(["installation_repositories.added", "installation_repositories.removed"], async (ctx) => {
+    app.log.info(ctx.payload);
     const pld = ctx.payload;
-    const owner = ctx.payload.installation.account.login;
-    const repos = ctx.payload.repositories_added;
-    
-    repos.forEach(async (repo)=>{
-      if (pld.action === "removed"){
-        app.log.info(`[${pld.installation.account.login}]: Uninstalled the application. `)
-      }
-      else if (pld.action === "added") {
+    const owner = pld.installation.account.login;
+    if (pld.action === "removed") {
+      pld.repositories_removed.forEach((repo) => {
+        app.log.info(`[${pld.installation.account.login}]: Uninstalled the application, from ${repo.name}`)
+      })
+    } else if (pld.action === "added") {
+      pld.repositories_added.forEach(async (repo) => {
         app.log.info(`[${pld.installation.account.login}]: Installation detected. Creating an issue with installation instructions.`);
         await ctx.octokit.issues.create({
           owner: owner,
           repo: repo.name,
+          assignee: owner,
           title: "Roaster Bot Installation Instructions",
           body: `
           To make sure that the app is properly working, you should create a new repository variable with the name \`OPENAI_API_KEY\` and the value should be your OpenAI API key.
           `,
           labels: APP_ISSUE_LABELS,
         });
-      }
-    })
-
+      })
+    }
   })
 
   app.on("workflow_run.completed", async (ctx) => {
