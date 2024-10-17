@@ -126,12 +126,12 @@ const OPENAI_API_KEY = "OPENAI_API_KEY"
 export default function appFn(app: Probot) {
   app.log.info(`[App]: started`)
   // when the app is installed, create an issue with the installation instructions
-  app.on(["installation.created", "installation.deleted", "installation.new_permissions_accepted"], async (ctx) => {
+  app.on(["installation_repositories.added", "installation_repositories.removed", "installation.new_permissions_accepted"], async (ctx) => {
     const pld = ctx.payload;
-    if (pld.action === "deleted"){
+    if (pld.action === "removed"){
       app.log.info(`[${pld.installation.account.login}]: Uninstalled the application. `)
     }
-    if (pld.action === "created" || pld.action === "new_permissions_accepted") {
+    if (pld.action === "added" || pld.action === "new_permissions_accepted") {
       app.log.info(`[${pld.installation.account.login}]: Installation detected. Creating an issue with installation instructions.`);
       const repo = ctx.repo();
       await ctx.octokit.issues.create({
