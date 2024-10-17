@@ -139,9 +139,7 @@ export default function appFn(app: Probot) {
           owner: owner,
           repo: repo.name,
           title: "Roaster Bot Installation Instructions",
-          body: `
-            To make sure that the app is properly working, you should create a new repository variable with the name \`OPENAI_API_KEY\` and the value should be your OpenAI API key.
-            `,
+          body: "To make sure that the app is properly working, you should create a new repository variable with the name \`OPENAI_API_KEY\` and the value should be your OpenAI API key.",
           labels: APP_ISSUE_LABELS,
         });
         app.log.info(`[ISSUE]: `, resp);
