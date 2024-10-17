@@ -135,20 +135,16 @@ export default function appFn(app: Probot) {
       pld.repositories_added.forEach(async (repo) => {
         app.log.info(`[${pld.installation.account.login}]: Installation detected. Creating an issue with installation instructions.`);
         // add some delay before hitting this endpoint
-        setTimeout(async () => {
-          const resp = await ctx.octokit.issues.create({
-            owner: owner,
-            repo: repo.name,
-            title: "Roaster Bot Installation Instructions",
-            body: `
+        const resp = await ctx.octokit.issues.create({
+          owner: owner,
+          repo: repo.name,
+          title: "Roaster Bot Installation Instructions",
+          body: `
             To make sure that the app is properly working, you should create a new repository variable with the name \`OPENAI_API_KEY\` and the value should be your OpenAI API key.
             `,
-            labels: APP_ISSUE_LABELS,
-          });
-
-          app.log.info(`[ISSUE]: ${resp}`);
-        }, 2000);
-
+          labels: APP_ISSUE_LABELS,
+        });
+        app.log.info(`[ISSUE]: `, resp);
       })
     }
   })
