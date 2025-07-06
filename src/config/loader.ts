@@ -16,14 +16,14 @@ export class ConfigLoader {
       const [
         apiKeyData,
         uncensoredData,
-        githubEnabledData,
+        ghChannelEnabledData,
         slackEnabledData,
         slackTokenData,
         slackChannelIdData,
       ] = await Promise.all([
         this.getVariable("OPENAI_API_KEY"),
         this.getVariable("ROASTER_UNCENSORED", "false"),
-        this.getVariable("GITHUB_CHANNEL_ENABLED", "true"),
+        this.getVariable("GH_CHANNEL_ENABLED", "true"),
         this.getVariable("SLACK_CHANNEL_ENABLED", "false"),
         this.getVariable("SLACK_TOKEN", ""),
         this.getVariable("SLACK_CHANNEL_ID", ""),
@@ -40,7 +40,7 @@ export class ConfigLoader {
         },
         channels: {
           github: {
-            enabled: githubEnabledData.value.toLowerCase() === "true",
+            enabled: ghChannelEnabledData.value.toLowerCase() === "true",
           },
           slack: {
             enabled: slackEnabledData.value.toLowerCase() === "true",
