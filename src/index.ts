@@ -8,6 +8,13 @@ import memesJson from "./memes.json" with { type: "json" };
 import type { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods"
 import { ChatCompletionMessageParam } from "openai/resources.js";
 
+// Import new channel system
+import { ConfigLoader } from "./config/loader.js";
+import { ChannelManagerImpl } from "./channels/manager.js";
+import { GitHubChannelHandler } from "./channels/github.js";
+import { SlackChannelHandler } from "./channels/slack.js";
+import { AppConfig, RoastMessage } from "./channels/types.js";
+
 type CommitComments = RestEndpointMethodTypes['repos']['listCommentsForCommit']['response']['data'];
 
 function sumCommitComments(comments: CommitComments) {
@@ -16,12 +23,6 @@ function sumCommitComments(comments: CommitComments) {
     summed.push(`[${comment?.user?.type}][${comment?.user?.login}](${comment?.author_association}):says ${comment.body}`);
   }
   return summed.join("\n");
-}
-
-const ROASTER_CONFIG = {
-  MAXIMUM_ROAST_LENGTH: 200,
-  MAXIMUM_ROASTS: 1,
-  uncensored: false,
 }
 
 const ROASTER_SYSTEM_PROMPTS = {
@@ -80,11 +81,6 @@ const ROASTER_SYSTEM_PROMPTS = {
   `,
 } as const;
 
-const ROASTER_SYSTEM_PROMPT = <ChatCompletionSystemMessageParam>{
-  role: "system",
-  content: ROASTER_CONFIG.uncensored ? ROASTER_SYSTEM_PROMPTS.uncensored : ROASTER_SYSTEM_PROMPTS.censored,
-}
-
 const getMemeFunction = zodFunction({
   name: "getMeme",
   description: "select a suitable meme or gif to make the roast stronger",
@@ -101,10 +97,16 @@ const tools: Array<ChatCompletionTool> = [
   getMemeFunction
 ];
 
-async function generateSavageRoast(wr: WorkflowRun, openai: OpenAI,
-  _extra: {
-    summedComments?: string
-  }) {
+async function generateSavageRoast(
+  workflowRun: WorkflowRun, 
+  openai: OpenAI,
+  config: AppConfig,
+  extra: { summedComments?: string }
+): Promise<RoastMessage[]> {
+  const systemPrompt: ChatCompletionSystemMessageParam = {
+    role: "system",
+    content: config.roaster.uncensored ? ROASTER_SYSTEM_PROMPTS.uncensored : ROASTER_SYSTEM_PROMPTS.censored,
+  };
 
   const contextMessage: ChatCompletionMessageParam = {
     role: "user",
@@ -112,31 +114,31 @@ async function generateSavageRoast(wr: WorkflowRun, openai: OpenAI,
 Generate a savage roast for this CI failure:
 
 🔥 Core Details:
-- Workflow: ${wr.display_title}
-- Failed by: @${wr.actor.login}
-- Commit: "${wr.head_commit.message}"
-- Branch: ${wr.head_branch}
-- Failure URL: ${wr.html_url}
+- Workflow: ${workflowRun.display_title}
+- Failed by: @${workflowRun.actor.login}
+- Commit: "${workflowRun.head_commit.message}"
+- Branch: ${workflowRun.head_branch}
+- Failure URL: ${workflowRun.html_url}
 
 💀 The Perpetrator:
-- Author: ${wr.head_commit.author.name}
-- Timestamp: ${wr.head_commit.timestamp}
-- Attempt #${wr.run_attempt}
+- Author: ${workflowRun.head_commit.author.name}
+- Timestamp: ${workflowRun.head_commit.timestamp}
+- Attempt #${workflowRun.run_attempt}
 
-${wr.pull_requests.length > 0 ? `
+${workflowRun.pull_requests.length > 0 ? `
 📌 Pull Request Context:
-- PR #${wr.pull_requests[0].number}
-- URL: ${wr.pull_requests[0].url}
+- PR #${workflowRun.pull_requests[0].number}
+- URL: ${workflowRun.pull_requests[0].url}
 ` : '📌 Note: Direct commit to branch (no PR)'}
 
 Guidelines:
-- Maximum length: ${ROASTER_CONFIG.MAXIMUM_ROAST_LENGTH} chars
-- Roasts to generate: ${ROASTER_CONFIG.MAXIMUM_ROASTS}
+- Maximum length: ${config.roaster.maximumRoastLength} chars
+- Roasts to generate: ${config.roaster.maximumRoasts}
 - Format: GitHub-flavored markdown
-- Tag the culprit: @${wr.actor.login}
+- Tag the culprit: @${workflowRun.actor.login}
 - Include the failure URL in your roast
     `
-  }
+  };
 
   const completion = await openai.chat.completions.parse({
     model: "gpt-4o-mini",
@@ -150,18 +152,24 @@ Guidelines:
       }), "roasts"),
     tools,
     messages: [
-      ROASTER_SYSTEM_PROMPT,
+      systemPrompt,
       {
         role: "system",
         content: `
         Here's some extra context the commit / pr comments try to mention the other users to roast them as well as needed 
-        ${_extra?.summedComments}
+        ${extra?.summedComments || ''}
         `
       },
       contextMessage
     ]
   });
-  return completion
+
+  const roastMessages = completion.choices.at(0)?.message.parsed?.messages;
+  if (!roastMessages) {
+    throw new Error("Failed to generate roast messages");
+  }
+
+  return roastMessages.map(msg => ({ content: msg.content }));
 }
 
 const APP_ISSUE_LABELS = [
@@ -177,7 +185,6 @@ const APP_ISSUE_LABELS = [
   }
 ];
 
-const OPENAI_API_KEY = "OPENAI_API_KEY"
 export default function appFn(app: Probot) {
   app.on(["installation_repositories.added", "installation_repositories.removed"], async (ctx) => {
     const pld = ctx.payload;
@@ -194,9 +201,24 @@ export default function appFn(app: Probot) {
           repo: repo.name,
           title: "Roaster Bot Installation Instructions",
           body: `To configure the bot, you need to set up the following repository variables:
-          
+
+## Required Variables:
 1. \`OPENAI_API_KEY\` - Your OpenAI API key
-2. \`ROASTER_UNCENSORED\` - Set to "true" to enable uncensored mode (optional, defaults to false)
+
+## Optional Variables:
+2. \`ROASTER_UNCENSORED\` - Set to "true" to enable uncensored mode (defaults to "false")
+3. \`GITHUB_CHANNEL_ENABLED\` - Set to "true" to enable GitHub comments (defaults to "true")
+4. \`SLACK_CHANNEL_ENABLED\` - Set to "true" to enable Slack integration (defaults to "false")
+
+## Slack Configuration (if enabled):
+5. \`SLACK_TOKEN\` - Your Slack bot token (starts with "xoxb-")
+6. \`SLACK_CHANNEL_ID\` - The Slack channel ID where roasts will be posted
+
+## Notes:
+- Both GitHub and Slack channels can be enabled simultaneously
+- At least one channel must be enabled for the bot to function
+- Uncensored mode removes professional language filters - use with caution!
+- For Slack integration, you'll need to create a Slack app and install it in your workspace
 
 Note: Uncensored mode removes professional language filters. Use with caution!`,
           labels: APP_ISSUE_LABELS,
@@ -209,62 +231,45 @@ Note: Uncensored mode removes professional language filters. Use with caution!`,
     const workflowRun = ctx.payload.workflow_run;
     const repo = ctx.repo();
 
-    const [apiKeyData, uncensoredData] = await Promise.all([
-      ctx.octokit.actions.getRepoVariable({
-        owner: repo.owner,
-        repo: repo.repo,
-        name: OPENAI_API_KEY
-      }),
-      ctx.octokit.actions.getRepoVariable({
-        owner: repo.owner,
-        repo: repo.repo,
-        name: 'ROASTER_UNCENSORED'
-      }).catch(() => ({ data: { value: 'false' } }))
-    ]);
-
-    const apiKey = apiKeyData.data.value;
-    ROASTER_CONFIG.uncensored = uncensoredData.data.value.toLowerCase() === 'true';
-
-    if (!apiKey) {
-      ctx.log.info(`[${repo.repo}]: No OpenAI API Key found. Please create a new repository variable with the name`)
+    if (workflowRun.conclusion !== "failure") {
       return;
     }
 
-    const openai = new OpenAI({
-      apiKey: apiKey,
-    })
+    try {
+      // Load configuration
+      const configLoader = new ConfigLoader(ctx);
+      const config = await configLoader.loadConfig();
 
-    if (workflowRun.conclusion === "failure") {
-      app.log.info(`[${repo.repo}]: Workflow run failed. Generating a roast for the user.`);
-      const completion = await generateSavageRoast(workflowRun, openai, {});
-      app.log.info(JSON.stringify(completion, null, 2))
-      const roastMessages = completion.choices.at(0)?.message.parsed?.messages;
-      if (!roastMessages) return;
-      app.log.info(`[${repo.repo}]: Roast generated: `, roastMessages?.map(f => f.content).join("\n"));
-      if (workflowRun.pull_requests.length > 0) {
-        for (const roast of roastMessages) {
-          await ctx.octokit.issues.createComment({
-            owner: repo.owner,
-            issue_number: workflowRun.pull_requests[0].number,
-            repo: repo.repo,
-            body: roast.content,
-          });
-        }
-      } else {
-        const comments = await ctx.octokit.repos.listCommentsForCommit({
-          commit_sha: workflowRun.head_commit.id,
-          owner: repo.owner,
-          repo: repo.repo,
-        });
-        for (const roast of roastMessages) {
-          await ctx.octokit.repos.createCommitComment({
-            owner: repo.owner,
-            commit_sha: workflowRun.head_commit.id,
-            repo: repo.repo,
-            body: roast.content,
-          });
-        }
-      }
+      app.log.info(`[${repo.repo}]: Workflow run failed. Generating roasts with configuration:`, {
+        githubEnabled: config.channels.github.enabled,
+        slackEnabled: config.channels.slack.enabled,
+        uncensored: config.roaster.uncensored,
+      });
+
+      // Create OpenAI client
+      const openai = new OpenAI({
+        apiKey: config.openai.apiKey,
+      });
+
+      // Create and configure channel manager
+      const channelManager = new ChannelManagerImpl(ctx, config);
+      
+      // Register available channels
+      channelManager.registerChannel(new GitHubChannelHandler(ctx));
+      channelManager.registerChannel(new SlackChannelHandler(ctx));
+
+      // Generate roasts
+      const roastMessages = await generateSavageRoast(workflowRun, openai, config, {});
+      
+      app.log.info(`[${repo.repo}]: Generated ${roastMessages.length} roast(s):`, 
+        roastMessages.map(r => r.content.substring(0, 100) + "..."));
+
+      // Send roasts through all enabled channels
+      await channelManager.sendRoasts(roastMessages, workflowRun);
+      
+      app.log.info(`[${repo.repo}]: Successfully processed workflow failure`);
+    } catch (error) {
+      app.log.error(`[${repo.repo}]: Failed to process workflow failure:`, error);
     }
   });
 };

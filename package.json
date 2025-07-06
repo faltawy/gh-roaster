@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@probot/adapter-aws-lambda-serverless": "^4.0.3",
+    "@slack/web-api": "^7.9.3",
     "openai": "^5.8.2",
     "probot": "^13.4.5",
     "probot-metadata": "^2.1.1",
