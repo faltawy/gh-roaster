@@ -21,12 +21,12 @@ export class ConfigLoader {
         slackTokenData,
         slackChannelIdData,
       ] = await Promise.all([
-        this.getVariable("OPENAI_API_KEY"),
+        this.getVariable("ROASTER_OPENAI_API_KEY"),
         this.getVariable("ROASTER_UNCENSORED", "false"),
-        this.getVariable("GH_CHANNEL_ENABLED", "true"),
-        this.getVariable("SLACK_CHANNEL_ENABLED", "false"),
-        this.getVariable("SLACK_TOKEN", ""),
-        this.getVariable("SLACK_CHANNEL_ID", ""),
+        this.getVariable("ROASTER_GITHUB_CHANNEL_ENABLED", "true"),
+        this.getVariable("ROASTER_SLACK_CHANNEL_ENABLED", "false"),
+        this.getVariable("ROASTER_SLACK_TOKEN", ""),
+        this.getVariable("ROASTER_SLACK_CHANNEL_ID", ""),
       ]);
 
       const config: AppConfig = {
