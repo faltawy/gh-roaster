@@ -162,7 +162,7 @@ Guidelines:
       },
       contextMessage
     ]
-  });
+  })
 
   const roastMessages = completion.choices.at(0)?.message.parsed?.messages;
   if (!roastMessages) {
@@ -259,7 +259,10 @@ Note: Uncensored mode removes professional language filters. Use with caution!`,
       channelManager.registerChannel(new SlackChannelHandler(ctx));
 
       // Generate roasts
-      const roastMessages = await generateSavageRoast(workflowRun, openai, config, {});
+      const roastMessages = await generateSavageRoast(workflowRun, openai, config, {}).catch((error) => {
+        app.log.error(`[${repo.repo}]: Failed to generate roast:`, JSON.stringify(error, null, 2));
+        throw error;
+      });
       
       app.log.info(`[${repo.repo}]: Generated ${roastMessages.length} roast(s):`, 
         roastMessages.map(r => r.content.substring(0, 100) + "..."));
@@ -269,7 +272,7 @@ Note: Uncensored mode removes professional language filters. Use with caution!`,
       
       app.log.info(`[${repo.repo}]: Successfully processed workflow failure`);
     } catch (error) {
-      app.log.error(`[${repo.repo}]: Failed to process workflow failure:`, error);
+      app.log.error(`[${repo.repo}]: Failed to process workflow failure:`, JSON.stringify(error, null, 2));
     }
   });
 };
