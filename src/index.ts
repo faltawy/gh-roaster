@@ -6,7 +6,7 @@ import { zodResponseFormat, zodFunction } from "openai/helpers/zod";
 import type { WorkflowRun } from "@octokit/webhooks-types";
 import memesJson from "./memes.json" with { type: "json" };
 import type { RestEndpointMethodTypes } from "@octokit/plugin-rest-endpoint-methods"
-import { ChatCompletionMessageParam } from "openai/src/resources/index.js";
+import { ChatCompletionMessageParam } from "openai/resources.js";
 
 type CommitComments = RestEndpointMethodTypes['repos']['listCommentsForCommit']['response']['data'];
 
@@ -138,7 +138,7 @@ Guidelines:
     `
   }
 
-  const completion = await openai.beta.chat.completions.parse({
+  const completion = await openai.chat.completions.parse({
     model: "gpt-4o-mini",
     stream: false,
     response_format: zodResponseFormat(
