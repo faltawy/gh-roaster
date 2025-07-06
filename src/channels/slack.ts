@@ -1,4 +1,4 @@
-import { WebClient, RichTextBlock, RichTextBlockElement } from "@slack/web-api";
+import { WebClient, RichTextBlock, KnownBlock } from "@slack/web-api";
 import { Context } from "probot";
 import type { WorkflowRun } from "@octokit/webhooks-types";
 import { ChannelHandler, ChannelConfig, RoastMessage } from "./types.js";
@@ -58,74 +58,52 @@ export class SlackChannelHandler implements ChannelHandler {
   }
 
   private createSlackBlocks(roastMessages: RoastMessage[], workflowRun: WorkflowRun, repo: { owner: string; repo: string }) {
-    const blocks: RichTextBlock[] = [
+    const blocks: KnownBlock[] = [
       {
-        type: "rich_text",
-        elements: [
-            {
-                type: 'rich_text_section',
-                elements: [
-                    {
-                        type: 'text',
-                        text: `🔥 CI Roast Alert for ${repo.repo}`,
-                    },
-                    {
-                        type: 'text',
-                        text: `*Failed by:* @${workflowRun.actor.login} | *Workflow:* ${workflowRun.display_title} | *Branch:* ${workflowRun.head_branch}`
-                    }
-                ]
-            }
-        ]
+        type: "section",
+        text: {
+            type: 'mrkdwn',
+            text: `🔥 CI Roast Alert for ${repo.repo}`,
+        }
       },
       {
-        type: 'rich_text',
-        elements: [
-            {
-                type: 'rich_text_section',
-                elements: [
-                    {
-                        type: 'text',
-                        text: `*Commit:* "${workflowRun.head_commit.message}"`
-                    }
-                ]
-            }
-        ]
+        type: "section",
+        text: {
+          type: 'mrkdwn',
+          text: `*Failed by:* @${workflowRun.actor.login} | *Workflow:* ${workflowRun.display_title} | *Branch:* ${workflowRun.head_branch}`
+        }
+      },
+      {
+        type: "section",
+        text: {
+          type: 'mrkdwn',
+          text: `*Commit:* "${workflowRun.head_commit.message}"`
+        }
+      },
+      {
+        type: 'divider'
       }
     ];
 
     // Add each roast as a separate block
     for (const roast of roastMessages) {
       blocks.push({
-        type: "rich_text",
-        elements: [
-            {
-                type: 'rich_text_section',
-                elements: [
-                    {
-                        type: 'text',
-                        text: roast.content
-                    }
-                ]
-            }
-        ]
+        type: "section",
+        text: {
+          type: 'mrkdwn',
+          text: roast.content
+        }
       });
     }
 
     // Add PR context if available
     if (workflowRun.pull_requests.length > 0) {
       blocks.push({
-        type: "rich_text",
-        elements: [
-            {
-                type: 'rich_text_section',
-                elements: [
-                    {
-                        type: 'text',
-                        text: `📌 *Pull Request:* <${workflowRun.pull_requests[0].url}|#${workflowRun.pull_requests[0].number}>`
-                    }
-                ]
-            }
-        ]
+          type: "section",
+        text: {
+          type: 'mrkdwn',
+          text: `📌 *Pull Request:* <${workflowRun.pull_requests[0].url}|#${workflowRun.pull_requests[0].number}>`
+        }
       });
     }
 
