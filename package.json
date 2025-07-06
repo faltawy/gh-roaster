@@ -38,5 +38,5 @@
   "engines": {
     "node": ">= 18"
   },
-  "packageManager": "pnpm@10.12.4+sha512.5ea8b0deed94ed68691c9bad4c955492705c5eeb8a87ef86bc62c74a26b037b08ff9570f108b2e4dbd1dd1a9186fea925e527f141c648e85af45631074680184"
+  "packageManager": "npm@11.4.2+sha512.f90c1ec8b207b625d6edb6693aef23dacb39c38e4217fe8c46a973f119cab392ac0de23fe3f07e583188dae9fd9108b3845ad6f525b598742bd060ebad60bff3"
 }
