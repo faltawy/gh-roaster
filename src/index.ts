@@ -202,17 +202,17 @@ export default function appFn(app: Probot) {
           title: "Roaster Bot Installation Instructions",
           body: `To configure the bot, you need to set up the following repository variables:
 
-## Required Variables:
-1. \`OPENAI_API_KEY\` - Your OpenAI API key
+  ## Required Variables:
+1. \`ROASTER_OPENAI_API_KEY\` - Your OpenAI API key
 
-## Optional Variables:
+  ## Optional Variables:
 2. \`ROASTER_UNCENSORED\` - Set to "true" to enable uncensored mode (defaults to "false")
-3. \`GITHUB_CHANNEL_ENABLED\` - Set to "true" to enable GitHub comments (defaults to "true")
-4. \`SLACK_CHANNEL_ENABLED\` - Set to "true" to enable Slack integration (defaults to "false")
+3. \`ROASTER_GITHUB_CHANNEL_ENABLED\` - Set to "true" to enable GitHub comments (defaults to "true")
+4. \`ROASTER_SLACK_CHANNEL_ENABLED\` - Set to "true" to enable Slack integration (defaults to "false")
 
-## Slack Configuration (if enabled):
-5. \`SLACK_TOKEN\` - Your Slack bot token (starts with "xoxb-")
-6. \`SLACK_CHANNEL_ID\` - The Slack channel ID where roasts will be posted
+  ## Slack Configuration (if enabled):
+5. \`ROASTER_SLACK_TOKEN\` - Your Slack bot token (starts with "xoxb-")
+6. \`ROASTER_SLACK_CHANNEL_ID\` - The Slack channel ID where roasts will be posted
 
 ## Notes:
 - Both GitHub and Slack channels can be enabled simultaneously

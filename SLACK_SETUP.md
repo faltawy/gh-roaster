@@ -52,15 +52,15 @@ In your GitHub repository, go to **Settings** → **Security** → **Secrets and
 Add the following repository variables:
 
 ### Required for Slack Integration:
-- `SLACK_CHANNEL_ENABLED` = `true`
-- `SLACK_TOKEN` = `xoxb-your-bot-token-here`
-- `SLACK_CHANNEL_ID` = `C1234567890` (your channel ID)
+- `ROASTER_SLACK_CHANNEL_ENABLED` = `true`
+- `ROASTER_SLACK_TOKEN` = `xoxb-your-bot-token-here`
+- `ROASTER_SLACK_CHANNEL_ID` = `C1234567890` (your channel ID)
 
 ### Optional GitHub Channel Control:
-- `GITHUB_CHANNEL_ENABLED` = `true` (default: true)
+- `ROASTER_GITHUB_CHANNEL_ENABLED` = `true` (default: true)
 
-### Other Configuration:
-- `OPENAI_API_KEY` = `sk-your-openai-api-key` (required)
+-### Other Configuration:
+- `ROASTER_OPENAI_API_KEY` = `sk-your-openai-api-key` (required)
 - `ROASTER_UNCENSORED` = `false` (default: false)
 
 ## Step 6: Test Your Setup
@@ -84,12 +84,12 @@ You can configure which channels are enabled:
 
 ### Common Issues:
 
-1. **"Missing SLACK_TOKEN"**
-   - Ensure you've set the `SLACK_TOKEN` repository variable
+1. **"Missing ROASTER_SLACK_TOKEN"**
+   - Ensure you've set the `ROASTER_SLACK_TOKEN` repository variable
    - Verify the token starts with `xoxb-`
 
-2. **"Missing SLACK_CHANNEL_ID"**
-   - Ensure you've set the `SLACK_CHANNEL_ID` repository variable
+2. **"Missing ROASTER_SLACK_CHANNEL_ID"**
+   - Ensure you've set the `ROASTER_SLACK_CHANNEL_ID` repository variable
    - Verify the channel ID format (usually starts with `C`)
 
 3. **"Bot not in channel" error**
@@ -118,7 +118,7 @@ When posting to Slack, the bot will create rich message blocks including:
 
 ## Security Considerations
 
-- Keep your `SLACK_TOKEN` secret and never commit it to your repository
+- Keep your `ROASTER_SLACK_TOKEN` secret and never commit it to your repository
 - Use GitHub's encrypted secrets/variables feature
 - Consider using a dedicated bot account rather than a personal token
 - Regularly rotate your Slack tokens
