@@ -60,7 +60,7 @@ Add the following repository variables:
 - `GITHUB_CHANNEL_ENABLED` = `true` (default: true)
 
 ### Other Configuration:
-- `OPENAI_API_KEY` = `sk-your-openai-api-key` (required)
+- `ROASTER_OPENAI_API_KEY` = `sk-your-openai-api-key` (required)
 - `ROASTER_UNCENSORED` = `false` (default: false)
 
 ## Step 6: Test Your Setup

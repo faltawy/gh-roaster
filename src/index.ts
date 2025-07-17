@@ -203,7 +203,7 @@ export default function appFn(app: Probot) {
           body: `To configure the bot, you need to set up the following repository variables:
 
 ## Required Variables:
-1. \`OPENAI_API_KEY\` - Your OpenAI API key
+1. \`ROASTER_OPENAI_API_KEY\` - Your OpenAI API key
 
 ## Optional Variables:
 2. \`ROASTER_UNCENSORED\` - Set to "true" to enable uncensored mode (defaults to "false")
