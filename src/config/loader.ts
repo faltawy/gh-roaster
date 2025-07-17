@@ -79,7 +79,7 @@ export class ConfigLoader {
   private validateConfig(config: AppConfig): void {
     // Validate OpenAI API key
     if (!config.openai.apiKey) {
-      throw new Error("OPENAI_API_KEY is required");
+      throw new Error("ROASTER_OPENAI_API_KEY is required");
     }
 
     // Validate at least one channel is enabled

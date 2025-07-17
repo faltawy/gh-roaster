@@ -202,7 +202,7 @@ export default function appFn(app: Probot) {
           title: "Roaster Bot Installation Instructions",
           body: `To configure the bot, you need to set up the following repository variables:
 
-  ## Required Variables:
+## Required Variables:
 1. \`ROASTER_OPENAI_API_KEY\` - Your OpenAI API key
 
   ## Optional Variables:

@@ -59,7 +59,7 @@ Add the following repository variables:
 ### Optional GitHub Channel Control:
 - `ROASTER_GITHUB_CHANNEL_ENABLED` = `true` (default: true)
 
--### Other Configuration:
+### Other Configuration:
 - `ROASTER_OPENAI_API_KEY` = `sk-your-openai-api-key` (required)
 - `ROASTER_UNCENSORED` = `false` (default: false)
 
