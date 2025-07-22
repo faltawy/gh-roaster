@@ -104,10 +104,10 @@ const tools: Array<ChatCompletionTool> = [
 ];
 
 async function generateSavageRoast(
-  workflowRun: WorkflowRun, 
+  workflowRun: WorkflowRun,
   openai: OpenAI,
   config: AppConfig,
-  extra: { summedComments?: string }
+  extra: { extraContext?: string }
 ): Promise<RoastMessage[]> {
   const systemPrompt: ChatCompletionSystemMessageParam = {
     role: "system",
@@ -163,10 +163,7 @@ Guidelines:
       systemPrompt,
       {
         role: "system",
-        content: `
-        Here's some extra context the commit / pr comments try to mention the other users to roast them as well as needed 
-        ${extra?.summedComments || ''}
-        `
+        content: extra?.extraContext || ""
       },
       contextMessage
     ]
@@ -178,6 +175,43 @@ Guidelines:
   }
 
   return roastMessages.map(msg => ({ content: msg.content }));
+}
+
+async function generateCommentRoast(
+  comment: { body: string; user: { login: string } },
+  openai: OpenAI,
+  config: AppConfig,
+  extraContext = ""
+): Promise<RoastMessage[]> {
+  const systemPrompt: ChatCompletionSystemMessageParam = {
+    role: "system",
+    content: config.roaster.uncensored ? ROASTER_SYSTEM_PROMPTS.uncensored : ROASTER_SYSTEM_PROMPTS.censored,
+  };
+
+  const contextMessage: ChatCompletionMessageParam = {
+    role: "user",
+    content: `Roast @${comment.user.login} in response to:\n"${comment.body}"\n${extraContext}`,
+  };
+
+  const completion = await openai.chat.completions.parse({
+    model: "gpt-4o-mini",
+    stream: false,
+    response_format: zodResponseFormat(
+      z.object({
+        messages: z.array(z.object({ content: z.string().describe(`markdown content`) })),
+      }),
+      "roasts"
+    ),
+    tools,
+    messages: [systemPrompt, contextMessage],
+  });
+
+  const roastMessages = completion.choices.at(0)?.message.parsed?.messages;
+  if (!roastMessages) {
+    throw new Error("Failed to generate roast messages");
+  }
+
+  return roastMessages.map((msg) => ({ content: msg.content }));
 }
 
 const APP_ISSUE_LABELS = [
@@ -266,8 +300,27 @@ Note: Uncensored mode removes professional language filters. Use with caution!`,
       channelManager.registerChannel(new GitHubChannelHandler(ctx));
       channelManager.registerChannel(new SlackChannelHandler(ctx));
 
+      const commitComments = await ctx.octokit.repos.listCommentsForCommit({
+        owner: repo.owner,
+        repo: repo.repo,
+        commit_sha: workflowRun.head_commit.id,
+      });
+
+      const runs = await ctx.octokit.actions.listWorkflowRunsForRepo({
+        owner: repo.owner,
+        repo: repo.repo,
+        per_page: 20,
+      });
+      const previousFailures = runs.data.workflow_runs
+        .filter(r => r.id !== workflowRun.id && r.conclusion === "failure" && r.actor?.login === workflowRun.actor.login)
+        .slice(0, 3)
+        .map(r => `- ${r.display_title} on ${r.head_branch}`)
+        .join("\n");
+
+      const extraContext = `Previous fails by @${workflowRun.actor.login}:\n${previousFailures}\nRecent comments:\n${sumCommitComments(commitComments.data)}`;
+
       // Generate roasts
-      const roastMessages = await generateSavageRoast(workflowRun, openai, config, {}).catch((error) => {
+      const roastMessages = await generateSavageRoast(workflowRun, openai, config, { extraContext }).catch((error) => {
         app.log.error(`[${repo.repo}]: Failed to generate roast:`, JSON.stringify(error, null, 2));
         throw error;
       });
@@ -281,6 +334,45 @@ Note: Uncensored mode removes professional language filters. Use with caution!`,
       app.log.info(`[${repo.repo}]: Successfully processed workflow failure`);
     } catch (error) {
       app.log.error(`[${repo.repo}]: Failed to process workflow failure:`, JSON.stringify(error, null, 2));
+    }
+  });
+
+  app.on("issue_comment.created", async (ctx) => {
+    const repo = ctx.repo();
+    const body = ctx.payload.comment.body;
+    if (!/roast/i.test(body)) {
+      return;
+    }
+
+    try {
+      const configLoader = new ConfigLoader(ctx as any);
+      const config = await configLoader.loadConfig();
+
+      const openai = new OpenAI({ apiKey: config.openai.apiKey });
+
+      const comments = await ctx.octokit.issues.listComments({
+        owner: repo.owner,
+        repo: repo.repo,
+        issue_number: ctx.payload.issue.number,
+        per_page: 5,
+      });
+      const history = comments.data
+        .slice(-5)
+        .map(c => `@${c.user.login}: ${c.body}`)
+        .join("\n");
+
+      const roasts = await generateCommentRoast(ctx.payload.comment, openai, config, history);
+
+      for (const roast of roasts) {
+        await ctx.octokit.issues.createComment({
+          owner: repo.owner,
+          repo: repo.repo,
+          issue_number: ctx.payload.issue.number,
+          body: roast.content,
+        });
+      }
+    } catch (error) {
+      ctx.log.error(`[${repo.repo}]: Failed to roast comment:`, JSON.stringify(error, null, 2));
     }
   });
 };
